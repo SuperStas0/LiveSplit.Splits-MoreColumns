@@ -9,8 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LsSrcPath)\LiveSplit.Core\LiveSplit.Core.csproj" Private="false" ExcludeAssets="runtime" />
-    <ProjectReference Include="$(LsSrcPath)\UpdateManager\UpdateManager.csproj" Private="false" ExcludeAssets="runtime" />
+    <Reference Include="LiveSplit.Core">
+  <HintPath>..\..\lib\LiveSplit.Core.dll</HintPath>
+  <Private>False</Private>
+</Reference>
+<Reference Include="UpdateManager">
+  <HintPath>..\..\lib\UpdateManager.dll</HintPath>
+  <Private>False</Private>
+</Reference>
   </ItemGroup>
 
   <ItemGroup>

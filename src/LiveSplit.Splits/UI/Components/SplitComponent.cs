@@ -385,6 +385,48 @@ public class SplitComponent : IComponent
         ColumnType type = data.Type;
 
         int splitIndex = state.Run.IndexOf(Split);
+
+        if (type is ColumnType.Completed or ColumnType.Passrate or ColumnType.Reachrate)
+        {
+            int attempts = state.Run.AttemptCount;
+            int amountCleared = Split.SegmentHistory.Count;
+            int amountReached = splitIndex == 0 ? attempts : state.Run[splitIndex-1].SegmentHistory.Count;
+            int rate;
+
+            label.ForeColor = Settings.OverrideTimesColor ? Settings.BeforeTimesColor : state.LayoutSettings.TextColor;
+
+            if (type == ColumnType.Completed)
+            {
+                label.Text = amountCleared.ToString();
+                return;
+            }
+
+            if (type == ColumnType.Passrate && amountReached != 0)
+            {
+                rate = 100 * amountCleared / amountReached;
+            }
+            else if (attempts != 0)
+            {
+                rate = 100 * amountReached / attempts;
+            }
+            else
+            {
+                label.Text = "";
+                return;
+            }
+
+            if (timingMethod == TimingMethod.GameTime)
+            {
+                int color = 255 * rate / 50;
+                int green = Math.Max(Math.Min(color, 255), 0);
+                int red = Math.Max(Math.Min(510 - color, 255), 0);
+                label.ForeColor = Color.FromArgb(red, green, 0);
+            }
+
+            label.Text = $"{rate}%";
+            return;
+        }
+
         if (splitIndex < state.CurrentSplitIndex)
         {
             if (type is ColumnType.SplitTime or ColumnType.SegmentTime)
@@ -511,17 +553,17 @@ public class SplitComponent : IComponent
 
     protected float CalculateLabelsWidth()
     {
-        if (ColumnsList != null)
+        if (ColumnsList == null)
         {
-            int mixedCount = ColumnsList.Count(x => x.Type is ColumnType.DeltaorSplitTime or ColumnType.SegmentDeltaorSegmentTime);
-            int deltaCount = ColumnsList.Count(x => x.Type is ColumnType.Delta or ColumnType.SegmentDelta);
-            int timeCount = ColumnsList.Count(x => x.Type is ColumnType.SplitTime or ColumnType.SegmentTime);
-            return (mixedCount * (Math.Max(MeasureDeltaLabel.ActualWidth, MeasureTimeLabel.ActualWidth) + 5))
-                + (deltaCount * (MeasureDeltaLabel.ActualWidth + 5))
-                + (timeCount * (MeasureTimeLabel.ActualWidth + 5));
+            return 0f;
         }
 
-        return 0f;
+        int mixedCount = ColumnsList.Count(x => x.Type is ColumnType.DeltaorSplitTime or ColumnType.SegmentDeltaorSegmentTime);
+        int deltaCount = ColumnsList.Count(x => x.Type is ColumnType.Delta or ColumnType.SegmentDelta);
+        int timeCount = ColumnsList.Count(x => x.Type is ColumnType.SplitTime or ColumnType.SegmentTime);
+        return (mixedCount * (Math.Max(MeasureDeltaLabel.ActualWidth, MeasureTimeLabel.ActualWidth) + 5))
+            + (deltaCount * (MeasureDeltaLabel.ActualWidth + 5))
+            + (timeCount * (MeasureTimeLabel.ActualWidth + 5));
     }
 
     protected void RecreateLabels()

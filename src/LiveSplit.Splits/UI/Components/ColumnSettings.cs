@@ -131,6 +131,18 @@ public partial class ColumnSettings : UserControl
         {
             return "Segment Delta";
         }
+        else if (type == ColumnType.Completed)
+        {
+            return "Completed";
+        }
+        else if (type == ColumnType.Passrate)
+        {
+            return "Passrate";
+        }
+        else if (type == ColumnType.Reachrate)
+        {
+            return "Reachrate";
+        }
         else
         {
             return "Segment Delta or Segment Time";
