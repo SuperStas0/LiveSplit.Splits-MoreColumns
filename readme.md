@@ -28,3 +28,4 @@ Building has same requirements as for [LiveSplit](https://github.com/LiveSplit/L
 1. Clone repository
 2. Replace files in `/lib/` as needed
 3. Run `dotnet build`
+4. Get `LiveSplits.Splits.dll` from `/artifacts/bin/LiveSplits.Splits/debug/`
