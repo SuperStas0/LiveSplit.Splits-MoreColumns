@@ -119,6 +119,10 @@ public class LabelsComponent : IComponent
                 {
                     labelWidth = MeasureDeltaLabel.ActualWidth;
                 }
+                    else if (column.Type is ColumnType.Completed or ColumnType.Passrate or ColumnType.Reachrate)
+                    {
+                        labelWidth = MeasureDeltaLabel.ActualWidth;
+                    }
                 else
                 {
                     labelWidth = MeasureTimeLabel.ActualWidth;
