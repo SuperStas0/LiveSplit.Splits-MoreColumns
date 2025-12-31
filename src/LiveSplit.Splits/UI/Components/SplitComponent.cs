@@ -389,14 +389,11 @@ public class SplitComponent : IComponent
         ColumnType type = data.Type;
 
         int splitIndex = state.Run.IndexOf(Split);
+        int currentSplitIndex = state.CurrentSplitIndex;
 
         if (type is ColumnType.Completed)
         {
-            int cleared = Split.SegmentHistory.Count;
-            if (splitIndex < state.CurrentSplitIndex)
-            {
-                cleared++;
-            }
+            int cleared = splitIndex < currentSplitIndex ? Split.SegmentHistory.Count+1 : Split.SegmentHistory.Count;
 
             label.ForeColor = Settings.OverrideTimesColor ? Settings.BeforeTimesColor : state.LayoutSettings.TextColor;
             label.Text = cleared.ToString();
@@ -404,9 +401,7 @@ public class SplitComponent : IComponent
         }
         else if (type is ColumnType.Passrate or ColumnType.Reachrate)
         {
-            int currentSplit = state.CurrentSplitIndex;
-            bool isRun = currentSplit != -1;
-            int attempts = isRun ? state.Run.AttemptCount - 1 : state.Run.AttemptCount;
+            int attempts = currentSplitIndex != -1 ? state.Run.AttemptCount - 1 : state.Run.AttemptCount;
             int amountCleared = Split.SegmentHistory.Count;
             int amountReached = splitIndex == 0 ? attempts : state.Run[splitIndex-1].SegmentHistory.Count;
             int rate;
@@ -415,23 +410,33 @@ public class SplitComponent : IComponent
             {
                 if (type == ColumnType.Passrate)
                 {
-                    if (splitIndex < state.CurrentSplitIndex)
+                    if (splitIndex < currentSplitIndex)
                     {
                         amountCleared++;
                         amountReached++;
                     }
 
                     rate = 100 * amountCleared / amountReached;
+
+                    if (rate == 0 && amountCleared != 0)
+                    {
+                        rate = 1;
+                    }
                 }
                 else
                 {
-                    if (splitIndex <= state.CurrentSplitIndex)
+                    if (splitIndex <= currentSplitIndex)
                     {
                         attempts++;
                         amountReached++;
                     }
 
                     rate = 100 * amountReached / attempts;
+
+                    if (rate == 0 && amountReached != 0)
+                    {
+                        rate = 1;
+                    }
                 }
             }
             catch (DivideByZeroException)
@@ -452,7 +457,7 @@ public class SplitComponent : IComponent
             return;
         }
 
-        if (splitIndex < state.CurrentSplitIndex)
+        if (splitIndex < currentSplitIndex)
         {
             if (type is ColumnType.SplitTime or ColumnType.SegmentTime)
             {
