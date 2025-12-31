@@ -390,30 +390,51 @@ public class SplitComponent : IComponent
 
         int splitIndex = state.Run.IndexOf(Split);
 
-        if (type is ColumnType.Completed or ColumnType.Passrate or ColumnType.Reachrate)
+        if (type is ColumnType.Completed)
         {
-            int attempts = state.Run.AttemptCount;
+            int cleared = Split.SegmentHistory.Count;
+            if (splitIndex < state.CurrentSplitIndex)
+            {
+                cleared++;
+            }
+
+            label.ForeColor = Settings.OverrideTimesColor ? Settings.BeforeTimesColor : state.LayoutSettings.TextColor;
+            label.Text = cleared.ToString();
+            return;
+        }
+        else if (type is ColumnType.Passrate or ColumnType.Reachrate)
+        {
+            int currentSplit = state.CurrentSplitIndex;
+            bool isRun = currentSplit != -1;
+            int attempts = isRun ? state.Run.AttemptCount - 1 : state.Run.AttemptCount;
             int amountCleared = Split.SegmentHistory.Count;
             int amountReached = splitIndex == 0 ? attempts : state.Run[splitIndex-1].SegmentHistory.Count;
             int rate;
 
-            label.ForeColor = Settings.OverrideTimesColor ? Settings.BeforeTimesColor : state.LayoutSettings.TextColor;
+            try
+            {
+                if (type == ColumnType.Passrate)
+                {
+                    if (splitIndex < state.CurrentSplitIndex)
+                    {
+                        amountCleared++;
+                        amountReached++;
+                    }
 
-            if (type == ColumnType.Completed)
-            {
-                label.Text = amountCleared.ToString();
-                return;
-            }
+                    rate = 100 * amountCleared / amountReached;
+                }
+                else
+                {
+                    if (splitIndex <= state.CurrentSplitIndex)
+                    {
+                        attempts++;
+                        amountReached++;
+                    }
 
-            if (type == ColumnType.Passrate && amountReached != 0)
-            {
-                rate = 100 * amountCleared / amountReached;
+                    rate = 100 * amountReached / attempts;
+                }
             }
-            else if (attempts != 0)
-            {
-                rate = 100 * amountReached / attempts;
-            }
-            else
+            catch (DivideByZeroException)
             {
                 label.Text = "";
                 return;
