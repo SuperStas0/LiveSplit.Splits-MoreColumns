@@ -88,7 +88,7 @@ public class SplitStats
 
     /// <summary>
     /// The chance to reach a split: the product of the pass rates of all splits before it.
-    /// Returns null when one of those splits has never been reached.
+    /// A split before it that was never reached makes it 0, or null while no attempt is recorded.
     /// </summary>
     public double? GetReachRate(LiveSplitState state, int splitIndex)
     {
@@ -105,7 +105,7 @@ public class SplitStats
             GetLiveCounts(state.CurrentSplitIndex, i, out int reached, out int completed);
             if (reached == 0)
             {
-                return null;
+                return attempts > 0 ? 0 : null;
             }
 
             rate *= (double)completed / reached;
