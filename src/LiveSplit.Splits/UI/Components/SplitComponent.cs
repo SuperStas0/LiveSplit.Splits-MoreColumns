@@ -506,19 +506,17 @@ public class SplitComponent : IComponent
         }
     }
 
-    protected void UpdateStatisticColumn(LiveSplitState state, SimpleLabel label, ColumnData data, TimingMethod timingMethod, int splitIndex)
+        protected void UpdateStatisticColumn(LiveSplitState state, SimpleLabel label, ColumnData data, TimingMethod timingMethod, int splitIndex)
     {
-        Stats.GetCounts(state, splitIndex, out int reached, out int completed, out int totalAttempts);
-
         label.ForeColor = Settings.OverrideTimesColor ? Settings.BeforeTimesColor : state.LayoutSettings.TextColor;
 
-        if (data.Type == ColumnType.Completed)
+        if (data.Type is ColumnType.Completed or ColumnType.Reached)
         {
-            label.Text = completed.ToString();
+            label.Text = (data.Type == ColumnType.Completed ? Stats.GetCompleted(state, splitIndex) : Stats.GetReached(state, splitIndex)).ToString();
             return;
         }
 
-        int? rate = data.Type == ColumnType.Passrate ? GetRate(completed, reached) : GetRate(reached, totalAttempts);
+        int? rate = ToPercent(data.Type == ColumnType.Passrate ? Stats.GetPassRate(state, splitIndex) : Stats.GetReachRate(state, splitIndex));
         if (rate == null)
         {
             label.Text = "";
@@ -537,15 +535,15 @@ public class SplitComponent : IComponent
         label.Text = $"{rate}%";
     }
 
-    private static int? GetRate(int part, int total)
+    private static int? ToPercent(double? fraction)
     {
-        if (total <= 0)
+        if (fraction == null)
         {
             return null;
         }
 
-        int rate = Math.Min((int)((100L * part) / total), 100);
-        return rate == 0 && part != 0 ? 1 : rate;
+        int percent = Math.Min((int)((fraction.Value * 100) + 1e-9), 100);
+        return percent == 0 && fraction.Value > 0 ? 1 : percent;
     }
 
     protected float CalculateLabelsWidth()

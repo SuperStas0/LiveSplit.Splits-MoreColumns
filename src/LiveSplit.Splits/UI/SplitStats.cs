@@ -11,19 +11,23 @@ namespace LiveSplit.UI.Components;
 /// <summary>
 /// Tracks per split how many attempts reached it and how many completed it.
 /// The counters live in the splits file (.lss) as one permanent run variable keyed by split name,
-/// so they follow a split when splits are reordered. Everything is recalculated from the
-/// segment history when the variable is missing, or when attempts were made without this component.
+/// so they follow a split when splits are reordered. A renamed split is found again by its segment
+/// history. Everything is recalculated from the segment history when the variable is missing,
+/// or when attempts were made without this component.
 /// </summary>
 public class SplitStats
 {
     public const string VariableName = "SplitsReachStats";
 
-    private const string FormatVersion = "1";
+    private const string FormatVersion = "2";
+    private const string FormatVersionWithoutHistory = "1";
 
     private sealed class Entry
     {
         public int Reached { get; set; }
         public int Completed { get; set; }
+        public int HistoryCount { get; set; } = -1;
+        public long HistorySum { get; set; }
     }
 
     private IRun cachedRun;
@@ -43,20 +47,82 @@ public class SplitStats
         }
     }
 
-    public void GetCounts(LiveSplitState state, int splitIndex, out int reached, out int completed, out int totalAttempts)
+    public int GetCompleted(LiveSplitState state, int splitIndex)
     {
         Sync(state.Run);
 
-        int current = state.CurrentSplitIndex;
-        reached = 0;
-        completed = 0;
-        totalAttempts = attempts + (current >= 0 ? 1 : 0);
-
-        if (splitIndex >= 0 && splitIndex < entries.Length)
+        if (splitIndex < 0 || splitIndex >= entries.Length)
         {
-            reached = entries[splitIndex].Reached + (splitIndex <= current ? 1 : 0);
-            completed = entries[splitIndex].Completed + (splitIndex < current ? 1 : 0);
+            return 0;
         }
+
+        GetLiveCounts(state.CurrentSplitIndex, splitIndex, out _, out int completed);
+        return completed;
+    }
+
+    public int GetReached(LiveSplitState state, int splitIndex)
+    {
+        Sync(state.Run);
+
+        if (splitIndex < 0 || splitIndex >= entries.Length)
+        {
+            return 0;
+        }
+
+        GetLiveCounts(state.CurrentSplitIndex, splitIndex, out int reached, out _);
+        return reached;
+    }
+
+    public double? GetPassRate(LiveSplitState state, int splitIndex)
+    {
+        Sync(state.Run);
+
+        if (splitIndex < 0 || splitIndex >= entries.Length)
+        {
+            return null;
+        }
+
+        GetLiveCounts(state.CurrentSplitIndex, splitIndex, out int reached, out int completed);
+        return reached > 0 ? (double)completed / reached : null;
+    }
+
+    /// <summary>
+    /// The chance to reach a split: the product of the pass rates of all splits before it.
+    /// Returns null when one of those splits has never been reached.
+    /// </summary>
+    public double? GetReachRate(LiveSplitState state, int splitIndex)
+    {
+        Sync(state.Run);
+
+        if (splitIndex < 0 || splitIndex >= entries.Length)
+        {
+            return null;
+        }
+
+        double rate = 1;
+        for (int i = 0; i < splitIndex; i++)
+        {
+            GetLiveCounts(state.CurrentSplitIndex, i, out int reached, out int completed);
+            if (reached == 0)
+            {
+                return null;
+            }
+
+            rate *= (double)completed / reached;
+        }
+
+        return rate;
+    }
+
+    /// <summary>
+    /// The running attempt only counts for the splits it has already passed. It counts for the
+    /// split it is on only once it is reset there, so arriving at a split never lowers its pass rate.
+    /// </summary>
+    private void GetLiveCounts(int current, int splitIndex, out int reached, out int completed)
+    {
+        int passed = splitIndex < current ? 1 : 0;
+        reached = entries[splitIndex].Reached + passed;
+        completed = entries[splitIndex].Completed + passed;
     }
 
     private bool Sync(IRun run)
@@ -100,18 +166,41 @@ public class SplitStats
         Dictionary<string, Entry> stored = Parse(text, out int storedAttempts, out int storedLastAttempt);
         bool hasStored = stored != null;
         string[] keys = GetKeys(run);
+        (int Count, long Sum)[] fingerprints = run.Select(GetFingerprint).ToArray();
         List<int> attemptIds = GetAttemptIds(run);
 
         var newEntries = new Entry[keys.Length];
         var seed = new bool[keys.Length];
         var catchUp = new bool[keys.Length];
-        bool anySeed = false;
+        var claimed = new HashSet<Entry>();
         for (int i = 0; i < keys.Length; i++)
         {
             if (hasStored && stored.TryGetValue(keys[i], out Entry known))
             {
                 newEntries[i] = known;
                 catchUp[i] = true;
+                claimed.Add(known);
+            }
+        }
+
+        // A split without a stored entry under its name may have been renamed: its segment history is unchanged.
+        for (int i = 0; i < keys.Length; i++)
+        {
+            if (newEntries[i] != null)
+            {
+                continue;
+            }
+
+            (int count, long sum) = fingerprints[i];
+            Entry renamed = hasStored && count > 0
+                ? stored.Values.FirstOrDefault(x => !claimed.Contains(x) && x.HistoryCount == count && x.HistorySum == sum)
+                : null;
+
+            if (renamed != null)
+            {
+                newEntries[i] = renamed;
+                catchUp[i] = true;
+                claimed.Add(renamed);
             }
             else
             {
@@ -119,11 +208,11 @@ public class SplitStats
 
                 // Without stored data, estimate from the segment history. A split with no history
                 // while other data exists is new and starts at zero.
-                seed[i] = !hasStored || run[i].SegmentHistory.Count > 0;
-                anySeed |= seed[i];
+                seed[i] = !hasStored || count > 0;
             }
         }
 
+        bool anySeed = seed.Contains(true);
         int previousLastAttempt = hasStored ? storedLastAttempt : int.MinValue;
         int newAttempts = hasStored ? storedAttempts : 0;
         int counted = 0;
@@ -148,6 +237,12 @@ public class SplitStats
                 newAttempts++;
                 counted++;
             }
+        }
+
+        for (int i = 0; i < newEntries.Length; i++)
+        {
+            newEntries[i].HistoryCount = fingerprints[i].Count;
+            newEntries[i].HistorySum = fingerprints[i].Sum;
         }
 
         cachedRun = run;
@@ -214,6 +309,22 @@ public class SplitStats
         return ids.Where(x => x >= 1).ToList();
     }
 
+    private static (int Count, long Sum) GetFingerprint(ISegment segment)
+    {
+        int count = 0;
+        long sum = 0;
+        foreach (int id in segment.SegmentHistory.Keys)
+        {
+            if (id >= 1)
+            {
+                count++;
+                sum += id;
+            }
+        }
+
+        return (count, sum);
+    }
+
     private static string[] GetKeys(IRun run)
     {
         var occurrences = new Dictionary<string, int>();
@@ -240,6 +351,8 @@ public class SplitStats
             builder.Append('|').Append(keys[i]);
             builder.Append(',').Append(entries[i].Reached.ToString(CultureInfo.InvariantCulture));
             builder.Append(',').Append(entries[i].Completed.ToString(CultureInfo.InvariantCulture));
+            builder.Append(',').Append(entries[i].HistoryCount.ToString(CultureInfo.InvariantCulture));
+            builder.Append(',').Append(entries[i].HistorySum.ToString(CultureInfo.InvariantCulture));
         }
 
         return builder.ToString();
@@ -257,33 +370,44 @@ public class SplitStats
 
         string[] parts = text.Split('|');
         if (parts.Length < 3
-            || parts[0] != FormatVersion
-            || !TryParseInt(parts[1], out storedAttempts)
-            || !TryParseInt(parts[2], out storedLastAttempt))
+            || (parts[0] != FormatVersion && parts[0] != FormatVersionWithoutHistory)
+            || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out storedAttempts)
+            || !int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out storedLastAttempt))
         {
             return null;
         }
 
+        bool hasHistory = parts[0] == FormatVersion;
         var result = new Dictionary<string, Entry>();
         for (int i = 3; i < parts.Length; i++)
         {
             string[] fields = parts[i].Split(',');
-            if (fields.Length != 4
-                || !TryParseInt(fields[2], out int reached)
-                || !TryParseInt(fields[3], out int completed))
+            var entry = new Entry();
+            if (fields.Length != (hasHistory ? 6 : 4)
+                || !int.TryParse(fields[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int reached)
+                || !int.TryParse(fields[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int completed))
             {
                 return null;
             }
 
-            result[fields[0] + "," + fields[1]] = new Entry { Reached = reached, Completed = completed };
+            entry.Reached = reached;
+            entry.Completed = completed;
+            if (hasHistory)
+            {
+                if (!int.TryParse(fields[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out int historyCount)
+                    || !long.TryParse(fields[5], NumberStyles.Integer, CultureInfo.InvariantCulture, out long historySum))
+                {
+                    return null;
+                }
+
+                entry.HistoryCount = historyCount;
+                entry.HistorySum = historySum;
+            }
+
+            result[fields[0] + "," + fields[1]] = entry;
         }
 
         return result;
-    }
-
-    private static bool TryParseInt(string text, out int value)
-    {
-        return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
     }
 
     private static string ReadText(IRun run)
