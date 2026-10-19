@@ -22,6 +22,7 @@ public class SplitsComponent : IComponent
     protected IList<SplitComponent> SplitComponents { get; set; }
 
     protected SplitsSettings Settings { get; set; }
+    protected SplitStats Stats { get; set; }
 
     private Dictionary<Image, Image> ShadowImages { get; set; }
 
@@ -56,6 +57,7 @@ public class SplitsComponent : IComponent
     {
         CurrentState = state;
         Settings = new SplitsSettings(state);
+        Stats = new SplitStats();
         InternalComponent = new ComponentRendererComponent();
         ShadowImages = [];
         visualSplitCount = Settings.VisualSplitCount;
@@ -113,7 +115,7 @@ public class SplitsComponent : IComponent
                 }
             }
 
-            var splitComponent = new SplitComponent(Settings, ColumnsList);
+            var splitComponent = new SplitComponent(Settings, ColumnsList, Stats);
             Components.Add(splitComponent);
             if (i < visualSplitCount - 1 || i == (Settings.LockLastSplit ? totalSplits - 1 : visualSplitCount - 1))
             {
@@ -268,6 +270,7 @@ public class SplitsComponent : IComponent
     private void state_OnReset(object sender, TimerPhase e)
     {
         ScrollOffset = 0;
+        Stats.Commit(((LiveSplitState)sender).Run);
     }
 
     private void state_OnStart(object sender, EventArgs e)

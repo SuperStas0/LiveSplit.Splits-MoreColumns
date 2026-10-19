@@ -18,10 +18,12 @@ public partial class ColumnSettings : UserControl
         {
             Data.Type = ParseColumnType(value);
             UpdateComparisonItems();
+            UpdateTypeDependentControls();
         }
     }
     public string Comparison { get => Data.Comparison; set => Data.Comparison = value; }
     public string TimingMethod { get => Data.TimingMethod; set => Data.TimingMethod = value; }
+    public bool ColorByRate { get => Data.ColorByRate; set => Data.ColorByRate = value; }
 
     public ColumnData Data { get; set; }
     protected LiveSplitState CurrentState { get; set; }
@@ -62,13 +64,16 @@ public partial class ColumnSettings : UserControl
     private void ColumnSettings_Load(object sender, EventArgs e)
     {
         UpdateComparisonItems();
+        UpdateTypeDependentControls();
 
         txtName.DataBindings.Clear();
         cmbColumnType.DataBindings.Clear();
         cmbTimingMethod.DataBindings.Clear();
+        chkColorByRate.DataBindings.Clear();
         txtName.DataBindings.Add("Text", this, "ColumnName", false, DataSourceUpdateMode.OnPropertyChanged);
         cmbColumnType.DataBindings.Add("SelectedItem", this, "Type", false, DataSourceUpdateMode.OnPropertyChanged);
         cmbTimingMethod.DataBindings.Add("SelectedItem", this, "TimingMethod", false, DataSourceUpdateMode.OnPropertyChanged);
+        chkColorByRate.DataBindings.Add("Checked", this, "ColorByRate", false, DataSourceUpdateMode.OnPropertyChanged);
     }
 
     public void UpdateEnabledButtons()
@@ -80,6 +85,13 @@ public partial class ColumnSettings : UserControl
     private void txtName_TextChanged(object sender, EventArgs e)
     {
         groupColumn.Text = $"Column: {txtName.Text}";
+    }
+
+    private void UpdateTypeDependentControls()
+    {
+        chkColorByRate.Enabled = Data.Type is ColumnType.Passrate or ColumnType.Reachrate;
+        cmbComparison.Enabled = !Data.IsStatistic;
+        cmbTimingMethod.Enabled = Data.Type != ColumnType.Completed;
     }
 
     private void UpdateComparisonItems()

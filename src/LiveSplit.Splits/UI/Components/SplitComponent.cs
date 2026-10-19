@@ -46,6 +46,7 @@ public class SplitComponent : IComponent
     public float PaddingRight => 0f;
 
     public IEnumerable<ColumnData> ColumnsList { get; set; }
+    protected SplitStats Stats { get; set; }
     public IList<SimpleLabel> LabelsList { get; set; }
 
     public float VerticalHeight { get; set; }
@@ -60,7 +61,7 @@ public class SplitComponent : IComponent
 
     public IDictionary<string, Action> ContextMenuControls => null;
 
-    public SplitComponent(SplitsSettings settings, IEnumerable<ColumnData> columnsList)
+    public SplitComponent(SplitsSettings settings, IEnumerable<ColumnData> columnsList, SplitStats stats)
     {
         NameLabel = new SimpleLabel()
         {
@@ -71,6 +72,7 @@ public class SplitComponent : IComponent
         MeasureDeltaLabel = new SimpleLabel();
         Settings = settings;
         ColumnsList = columnsList;
+        Stats = stats;
         TimeFormatter = new SplitTimeFormatter(Settings.SplitTimesAccuracy);
         DeltaTimeFormatter = new DeltaSplitTimeFormatter(Settings.DeltasAccuracy, Settings.DropDecimals);
         MinimumHeight = 25;
@@ -235,23 +237,7 @@ public class SplitComponent : IComponent
                 {
                     ColumnData column = ColumnsList.ElementAt(LabelsList.IndexOf(label));
 
-                    float labelWidth = 0f;
-                    if (column.Type is ColumnType.DeltaorSplitTime or ColumnType.SegmentDeltaorSegmentTime)
-                    {
-                        labelWidth = Math.Max(MeasureDeltaLabel.ActualWidth, MeasureTimeLabel.ActualWidth);
-                    }
-                    else if (column.Type is ColumnType.Delta or ColumnType.SegmentDelta)
-                    {
-                        labelWidth = MeasureDeltaLabel.ActualWidth;
-                    }
-                    else if (column.Type is ColumnType.Completed or ColumnType.Passrate or ColumnType.Reachrate)
-                    {
-                        labelWidth = MeasureDeltaLabel.ActualWidth;
-                    }
-                    else
-                    {
-                        labelWidth = MeasureTimeLabel.ActualWidth;
-                    }
+                    float labelWidth = column.GetLabelWidth(MeasureTimeLabel.ActualWidth, MeasureDeltaLabel.ActualWidth);
 
                     label.Width = labelWidth + 20;
                     curX -= labelWidth + 5;
@@ -389,75 +375,14 @@ public class SplitComponent : IComponent
         ColumnType type = data.Type;
 
         int splitIndex = state.Run.IndexOf(Split);
-        int currentSplitIndex = state.CurrentSplitIndex;
 
-        if (type is ColumnType.Completed)
+        if (data.IsStatistic)
         {
-            int cleared = splitIndex < currentSplitIndex ? Split.SegmentHistory.Count+1 : Split.SegmentHistory.Count;
-
-            label.ForeColor = Settings.OverrideTimesColor ? Settings.BeforeTimesColor : state.LayoutSettings.TextColor;
-            label.Text = cleared.ToString();
-            return;
-        }
-        else if (type is ColumnType.Passrate or ColumnType.Reachrate)
-        {
-            int attempts = currentSplitIndex != -1 ? state.Run.AttemptCount - 1 : state.Run.AttemptCount;
-            int amountCleared = Split.SegmentHistory.Count;
-            int amountReached = splitIndex == 0 ? attempts : state.Run[splitIndex-1].SegmentHistory.Count;
-            int rate;
-
-            try
-            {
-                if (type == ColumnType.Passrate)
-                {
-                    if (splitIndex < currentSplitIndex)
-                    {
-                        amountCleared++;
-                        amountReached++;
-                    }
-
-                    rate = 100 * amountCleared / amountReached;
-
-                    if (rate == 0 && amountCleared != 0)
-                    {
-                        rate = 1;
-                    }
-                }
-                else
-                {
-                    if (splitIndex <= currentSplitIndex)
-                    {
-                        attempts++;
-                        amountReached++;
-                    }
-
-                    rate = 100 * amountReached / attempts;
-
-                    if (rate == 0 && amountReached != 0)
-                    {
-                        rate = 1;
-                    }
-                }
-            }
-            catch (DivideByZeroException)
-            {
-                label.Text = "";
-                return;
-            }
-
-            if (timingMethod == TimingMethod.GameTime)
-            {
-                int color = 255 * rate / 50;
-                int green = Math.Max(Math.Min(color, 255), 0);
-                int red = Math.Max(Math.Min(510 - color, 255), 0);
-                label.ForeColor = Color.FromArgb(red, green, 0);
-            }
-
-            label.Text = $"{rate}%";
+            UpdateStatisticColumn(state, label, data, timingMethod, splitIndex);
             return;
         }
 
-        if (splitIndex < currentSplitIndex)
+        if (splitIndex < state.CurrentSplitIndex)
         {
             if (type is ColumnType.SplitTime or ColumnType.SegmentTime)
             {
@@ -581,6 +506,48 @@ public class SplitComponent : IComponent
         }
     }
 
+    protected void UpdateStatisticColumn(LiveSplitState state, SimpleLabel label, ColumnData data, TimingMethod timingMethod, int splitIndex)
+    {
+        Stats.GetCounts(state, splitIndex, out int reached, out int completed, out int totalAttempts);
+
+        label.ForeColor = Settings.OverrideTimesColor ? Settings.BeforeTimesColor : state.LayoutSettings.TextColor;
+
+        if (data.Type == ColumnType.Completed)
+        {
+            label.Text = completed.ToString();
+            return;
+        }
+
+        int? rate = data.Type == ColumnType.Passrate ? GetRate(completed, reached) : GetRate(reached, totalAttempts);
+        if (rate == null)
+        {
+            label.Text = "";
+            return;
+        }
+
+        // The Game Time check is the original way to enable coloring, kept for existing layouts.
+        if (data.ColorByRate || timingMethod == TimingMethod.GameTime)
+        {
+            int color = 255 * rate.Value / 50;
+            int green = Math.Max(Math.Min(color, 255), 0);
+            int red = Math.Max(Math.Min(510 - color, 255), 0);
+            label.ForeColor = Color.FromArgb(red, green, 0);
+        }
+
+        label.Text = $"{rate}%";
+    }
+
+    private static int? GetRate(int part, int total)
+    {
+        if (total <= 0)
+        {
+            return null;
+        }
+
+        int rate = Math.Min((int)((100L * part) / total), 100);
+        return rate == 0 && part != 0 ? 1 : rate;
+    }
+
     protected float CalculateLabelsWidth()
     {
         if (ColumnsList == null)
@@ -588,12 +555,7 @@ public class SplitComponent : IComponent
             return 0f;
         }
 
-        int mixedCount = ColumnsList.Count(x => x.Type is ColumnType.DeltaorSplitTime or ColumnType.SegmentDeltaorSegmentTime);
-        int deltaCount = ColumnsList.Count(x => x.Type is ColumnType.Delta or ColumnType.SegmentDelta);
-        int timeCount = ColumnsList.Count(x => x.Type is ColumnType.SplitTime or ColumnType.SegmentTime);
-        return (mixedCount * (Math.Max(MeasureDeltaLabel.ActualWidth, MeasureTimeLabel.ActualWidth) + 5))
-            + (deltaCount * (MeasureDeltaLabel.ActualWidth + 5))
-            + (timeCount * (MeasureTimeLabel.ActualWidth + 5));
+        return ColumnsList.Sum(x => x.GetLabelWidth(MeasureTimeLabel.ActualWidth, MeasureDeltaLabel.ActualWidth) + 5);
     }
 
     protected void RecreateLabels()

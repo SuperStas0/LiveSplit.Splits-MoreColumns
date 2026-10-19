@@ -9,13 +9,27 @@ public class ColumnData
     public ColumnType Type { get; set; }
     public string Comparison { get; set; }
     public string TimingMethod { get; set; }
+    public bool ColorByRate { get; set; }
 
-    public ColumnData(string name, ColumnType type, string comparison, string method)
+    public bool IsStatistic => Type is ColumnType.Completed or ColumnType.Passrate or ColumnType.Reachrate;
+
+    public ColumnData(string name, ColumnType type, string comparison, string method, bool colorByRate = false)
     {
         Name = name;
         Type = type;
         Comparison = comparison;
         TimingMethod = method;
+        ColorByRate = colorByRate;
+    }
+
+    public float GetLabelWidth(float timeWidth, float deltaWidth)
+    {
+        return Type switch
+        {
+            ColumnType.DeltaorSplitTime or ColumnType.SegmentDeltaorSegmentTime => Math.Max(timeWidth, deltaWidth),
+            ColumnType.Delta or ColumnType.SegmentDelta or ColumnType.Completed or ColumnType.Passrate or ColumnType.Reachrate => deltaWidth,
+            _ => timeWidth,
+        };
     }
 
     public static ColumnData FromXml(XmlNode node)
@@ -24,7 +38,8 @@ public class ColumnData
         return new ColumnData(element["Name"].InnerText,
             (ColumnType)Enum.Parse(typeof(ColumnType), element["Type"].InnerText),
             element["Comparison"].InnerText,
-            element["TimingMethod"].InnerText);
+            element["TimingMethod"].InnerText,
+            SettingsHelper.ParseBool(element["ColorByRate"], false));
     }
 
     public int CreateElement(XmlDocument document, XmlElement element)
@@ -33,6 +48,7 @@ public class ColumnData
         SettingsHelper.CreateSetting(document, element, "Name", Name) ^
         SettingsHelper.CreateSetting(document, element, "Type", Type) ^
         SettingsHelper.CreateSetting(document, element, "Comparison", Comparison) ^
-        SettingsHelper.CreateSetting(document, element, "TimingMethod", TimingMethod);
+        SettingsHelper.CreateSetting(document, element, "TimingMethod", TimingMethod) ^
+        SettingsHelper.CreateSetting(document, element, "ColorByRate", ColorByRate);
     }
 }

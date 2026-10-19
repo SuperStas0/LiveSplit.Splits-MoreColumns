@@ -40,6 +40,7 @@
             this.btnRemoveColumn = new System.Windows.Forms.Button();
             this.btnMoveDown = new System.Windows.Forms.Button();
             this.btnMoveUp = new System.Windows.Forms.Button();
+            this.chkColorByRate = new System.Windows.Forms.CheckBox();
             this.groupColumn = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.groupColumn.SuspendLayout();
@@ -60,19 +61,21 @@
             this.tableLayoutPanel1.Controls.Add(this.cmbColumnType, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.cmbComparison, 1, 2);
             this.tableLayoutPanel1.Controls.Add(this.cmbTimingMethod, 1, 3);
-            this.tableLayoutPanel1.Controls.Add(this.btnRemoveColumn, 3, 4);
-            this.tableLayoutPanel1.Controls.Add(this.btnMoveDown, 2, 4);
-            this.tableLayoutPanel1.Controls.Add(this.btnMoveUp, 1, 4);
+            this.tableLayoutPanel1.Controls.Add(this.chkColorByRate, 1, 4);
+            this.tableLayoutPanel1.Controls.Add(this.btnRemoveColumn, 3, 5);
+            this.tableLayoutPanel1.Controls.Add(this.btnMoveDown, 2, 5);
+            this.tableLayoutPanel1.Controls.Add(this.btnMoveUp, 1, 5);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 16);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 5;
+            this.tableLayoutPanel1.RowCount = 6;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(421, 146);
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
+            this.tableLayoutPanel1.Size = 	new System.Drawing.Size(421, 175);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // label1
@@ -176,10 +179,22 @@
             this.cmbTimingMethod.TabIndex = 48;
             this.cmbTimingMethod.SelectedIndexChanged += new System.EventHandler(cmbTimingMethod_SelectedIndexChanged);
             // 
+            // chkColorByRate
+            // 
+            this.chkColorByRate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.chkColorByRate.AutoSize = true;
+            this.tableLayoutPanel1.SetColumnSpan(this.chkColorByRate, 3);
+            this.chkColorByRate.Location = new System.Drawing.Point(93, 121);
+            this.chkColorByRate.Name = "chkColorByRate";
+            this.chkColorByRate.Size = new System.Drawing.Size(325, 17);
+            this.chkColorByRate.TabIndex = 49;
+            this.chkColorByRate.Text = "Color by rate (Passrate / Reachrate)";
+            this.chkColorByRate.UseVisualStyleBackColor = true;
+            //
             // btnRemoveColumn
             // 
             this.btnRemoveColumn.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.btnRemoveColumn.Location = new System.Drawing.Point(324, 119);
+            this.btnRemoveColumn.Location = new System.Drawing.Point(324, 148);
             this.btnRemoveColumn.Name = "btnRemoveColumn";
             this.btnRemoveColumn.Size = new System.Drawing.Size(94, 23);
             this.btnRemoveColumn.TabIndex = 52;
@@ -190,7 +205,7 @@
             // btnMoveDown
             // 
             this.btnMoveDown.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.btnMoveDown.Location = new System.Drawing.Point(223, 119);
+            this.btnMoveDown.Location = new System.Drawing.Point(223, 148);
             this.btnMoveDown.Name = "btnMoveDown";
             this.btnMoveDown.Size = new System.Drawing.Size(75, 23);
             this.btnMoveDown.TabIndex = 51;
@@ -201,7 +216,7 @@
             // btnMoveUp
             // 
             this.btnMoveUp.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.btnMoveUp.Location = new System.Drawing.Point(142, 119);
+            this.btnMoveUp.Location = new System.Drawing.Point(142, 148);
             this.btnMoveUp.Name = "btnMoveUp";
             this.btnMoveUp.Size = new System.Drawing.Size(75, 23);
             this.btnMoveUp.TabIndex = 50;
@@ -215,7 +230,7 @@
             this.groupColumn.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupColumn.Location = new System.Drawing.Point(0, 0);
             this.groupColumn.Name = "groupColumn";
-            this.groupColumn.Size = new System.Drawing.Size(427, 165);
+            this.groupColumn.Size = new System.Drawing.Size(427, 194);
             this.groupColumn.TabIndex = 1;
             this.groupColumn.TabStop = false;
             this.groupColumn.Text = "Column Name";
@@ -226,7 +241,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.groupColumn);
             this.Name = "ColumnSettings";
-            this.Size = new System.Drawing.Size(427, 165);
+            this.Size = new System.Drawing.Size(427, 194);
             this.Load += new System.EventHandler(ColumnSettings_Load);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
@@ -250,5 +265,6 @@
         private System.Windows.Forms.Button btnRemoveColumn;
         private System.Windows.Forms.Button btnMoveDown;
         private System.Windows.Forms.Button btnMoveUp;
+        private System.Windows.Forms.CheckBox chkColorByRate;
     }
 }

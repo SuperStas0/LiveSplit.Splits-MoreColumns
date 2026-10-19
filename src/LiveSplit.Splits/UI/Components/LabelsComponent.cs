@@ -110,23 +110,7 @@ public class LabelsComponent : IComponent
             {
                 ColumnData column = ColumnsList.ElementAt(LabelsList.IndexOf(label));
 
-                float labelWidth = 0f;
-                if (column.Type is ColumnType.DeltaorSplitTime or ColumnType.SegmentDeltaorSegmentTime)
-                {
-                    labelWidth = Math.Max(MeasureDeltaLabel.ActualWidth, MeasureTimeLabel.ActualWidth);
-                }
-                else if (column.Type is ColumnType.Delta or ColumnType.SegmentDelta)
-                {
-                    labelWidth = MeasureDeltaLabel.ActualWidth;
-                }
-                    else if (column.Type is ColumnType.Completed or ColumnType.Passrate or ColumnType.Reachrate)
-                    {
-                        labelWidth = MeasureDeltaLabel.ActualWidth;
-                    }
-                else
-                {
-                    labelWidth = MeasureTimeLabel.ActualWidth;
-                }
+                float labelWidth = column.GetLabelWidth(MeasureTimeLabel.ActualWidth, MeasureDeltaLabel.ActualWidth);
 
                 curX -= labelWidth + 5;
                 label.Width = labelWidth;
