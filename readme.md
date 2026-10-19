@@ -9,11 +9,13 @@ Download `LiveSplit.Splits.dll` file from releases and move it to `C:/Program Fi
 
 ## Columns
 - **Completed** - shows how many times the split has been completed (skipped splits count as completed)
+- **Reached** - shows how many times the split has been reached
 - **Passrate** - shows completed / reached
-- **Reachrate** - shows reached / total attempts
+- **Reachrate** - shows the chance to reach the split: the passrates of all splits before it multiplied together
 
-Reached counts are tracked per split, so reordering, inserting or removing splits does not break the rates.
+The running attempt only counts for splits it has already passed, so arriving at a split does not lower its passrate. It counts for the split it is on only once you reset there.
 
+Counts are tracked per split, so reordering, inserting, removing or renaming splits does not break the rates.
 ### Coloring
 For the **passrate** and **reachrate** column types, enable **Color by rate** in the column settings. Color changes from red at 0% to yellow at 50% to green at 100%.
 
@@ -23,7 +25,7 @@ Layouts from earlier versions keep working: setting the column timing method to 
 Counts are saved in the splits file (`.lss`) as one permanent run variable named `SplitsReachStats`, keyed by split name.
 - Splits files without it are recalculated from the segment history when opened, and the variable is written on the next save
 - LiveSplit without this component ignores the variable; attempts made that way are added the next time the file is opened with it
-- A renamed split is re-estimated from its history, and a newly added split starts at 0
+- A renamed split is matched again by its segment history; a newly added split starts at 0
 
 ## Building from source
 

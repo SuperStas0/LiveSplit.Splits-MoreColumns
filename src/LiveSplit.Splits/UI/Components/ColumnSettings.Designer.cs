@@ -142,6 +142,7 @@
             "Segment Time",
             "Segment Delta or Segment Time",
             "Completed",
+            "Reached",
             "Passrate",
             "Reachrate",
             });

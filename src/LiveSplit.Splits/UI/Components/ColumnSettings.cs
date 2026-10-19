@@ -91,7 +91,7 @@ public partial class ColumnSettings : UserControl
     {
         chkColorByRate.Enabled = Data.Type is ColumnType.Passrate or ColumnType.Reachrate;
         cmbComparison.Enabled = !Data.IsStatistic;
-        cmbTimingMethod.Enabled = Data.Type != ColumnType.Completed;
+        cmbTimingMethod.Enabled = Data.Type is not ColumnType.Completed and not ColumnType.Reached;
     }
 
     private void UpdateComparisonItems()
@@ -146,6 +146,10 @@ public partial class ColumnSettings : UserControl
         else if (type == ColumnType.Completed)
         {
             return "Completed";
+        }
+        else if (type == ColumnType.Reached)
+        {
+            return "Reached";
         }
         else if (type == ColumnType.Passrate)
         {
