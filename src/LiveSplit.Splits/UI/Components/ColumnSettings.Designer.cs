@@ -141,11 +141,11 @@
             "Segment Delta",
             "Segment Time",
             "Segment Delta or Segment Time",
+            "Custom Variable",
             "Completed",
             "Reached",
             "Passrate",
-            "Reachrate",
-            });
+            "Reachrate"});
             this.cmbColumnType.Location = new System.Drawing.Point(93, 33);
             this.cmbColumnType.Name = "cmbColumnType";
             this.cmbColumnType.Size = new System.Drawing.Size(325, 21);

@@ -143,6 +143,14 @@ public partial class ColumnSettings : UserControl
         {
             return "Segment Delta";
         }
+        else if (type == ColumnType.SegmentDeltaorSegmentTime)
+        {
+            return "Segment Delta or Segment Time";
+        }
+        else if (type == ColumnType.CustomVariable)
+        {
+            return "Custom Variable";
+        }
         else if (type == ColumnType.Completed)
         {
             return "Completed";
@@ -161,7 +169,7 @@ public partial class ColumnSettings : UserControl
         }
         else
         {
-            return "Segment Delta or Segment Time";
+            return "Unknown";
         }
     }
 
