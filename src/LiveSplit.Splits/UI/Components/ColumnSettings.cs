@@ -16,7 +16,14 @@ public partial class ColumnSettings : UserControl
         get => GetColumnType(Data.Type);
         set
         {
-            Data.Type = ParseColumnType(value);
+            ColumnType newType = ParseColumnType(value);
+            if (newType != Data.Type && newType == ColumnType.EstimatedReachingTime && Data.TimingMethod == "Current Timing Method")
+            {
+                TimingMethod = "Real Time";
+                cmbTimingMethod.SelectedItem = TimingMethod;
+            }
+
+            Data.Type = newType;
             UpdateComparisonItems();
             UpdateTypeDependentControls();
         }
@@ -166,6 +173,10 @@ public partial class ColumnSettings : UserControl
         else if (type == ColumnType.Reachrate)
         {
             return "Reachrate";
+        }
+        else if (type == ColumnType.EstimatedReachingTime)
+        {
+            return "Estimated Reaching Time";
         }
         else
         {

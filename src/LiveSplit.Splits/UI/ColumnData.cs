@@ -11,7 +11,7 @@ public class ColumnData
     public string TimingMethod { get; set; }
     public bool ColorByRate { get; set; }
 
-    public bool IsStatistic => Type is ColumnType.Completed or ColumnType.Reached or ColumnType.Passrate or ColumnType.Reachrate;
+    public bool IsStatistic => Type is ColumnType.Completed or ColumnType.Reached or ColumnType.Passrate or ColumnType.Reachrate or ColumnType.EstimatedReachingTime;
 
     public ColumnData(string name, ColumnType type, string comparison, string method, bool colorByRate = false)
     {

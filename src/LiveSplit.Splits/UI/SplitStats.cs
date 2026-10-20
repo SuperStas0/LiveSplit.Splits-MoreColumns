@@ -38,6 +38,7 @@ public class SplitStats
     private Entry[] entries = [];
     private int attempts;
     private int lastAttempt = int.MinValue;
+    private readonly Dictionary<TimingMethod, double?[]> averageCache = new();
 
     public void Commit(IRun run)
     {
@@ -115,6 +116,74 @@ public class SplitStats
     }
 
     /// <summary>
+    /// The average total time spent, over all attempts, until a split is reached once.
+    /// An attempt that passes a split spends its average segment time there, an attempt that fails it
+    /// spends half of that. Blank for the first split and when the split can't be reached.
+    /// </summary>
+    public TimeSpan? GetEstimatedReachingTime(LiveSplitState state, int splitIndex, TimingMethod method)
+    {
+        Sync(state.Run);
+
+        if (splitIndex <= 0 || splitIndex >= entries.Length)
+        {
+            return null;
+        }
+
+        double?[] averages = GetAverageSegmentTicks(state.Run, method);
+        double rate = 1;
+        double cost = 0;
+        for (int i = 0; i < splitIndex; i++)
+        {
+            GetLiveCounts(state.CurrentSplitIndex, i, out int reached, out int completed);
+            if (reached == 0 || completed == 0 || averages[i] == null)
+            {
+                return null;
+            }
+
+            double passRate = (double)completed / reached;
+            cost += rate * averages[i].Value * (1 + passRate) / 2;
+            rate *= passRate;
+        }
+
+        double ticks = cost / rate;
+        if (double.IsNaN(ticks) || ticks >= TimeSpan.MaxValue.Ticks)
+        {
+            return null;
+        }
+
+        return TimeSpan.FromTicks((long)ticks);
+    }
+
+    private double?[] GetAverageSegmentTicks(IRun run, TimingMethod method)
+    {
+        if (averageCache.TryGetValue(method, out double?[] cached))
+        {
+            return cached;
+        }
+
+        var averages = new double?[run.Count];
+        for (int i = 0; i < averages.Length; i++)
+        {
+            double sum = 0;
+            int count = 0;
+            foreach (Time time in run[i].SegmentHistory.Values)
+            {
+                TimeSpan? value = time[method];
+                if (value != null)
+                {
+                    sum += value.Value.Ticks;
+                    count++;
+                }
+            }
+
+            averages[i] = count > 0 ? sum / count : null;
+        }
+
+        averageCache[method] = averages;
+        return averages;
+    }
+
+    /// <summary>
     /// The running attempt only counts for the splits it has already passed. It counts for the
     /// split it is on only once it is reset there, so arriving at a split never lowers its pass rate.
     /// </summary>
@@ -163,6 +232,7 @@ public class SplitStats
 
     private bool Rebuild(IRun run, string text)
     {
+        averageCache.Clear();
         Dictionary<string, Entry> stored = Parse(text, out int storedAttempts, out int storedLastAttempt);
         bool hasStored = stored != null;
         string[] keys = GetKeys(run);

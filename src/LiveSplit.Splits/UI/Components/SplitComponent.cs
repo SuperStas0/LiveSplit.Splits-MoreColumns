@@ -521,6 +521,13 @@ public class SplitComponent : IComponent
     {
         label.ForeColor = Settings.OverrideTimesColor ? Settings.BeforeTimesColor : state.LayoutSettings.TextColor;
 
+        if (data.Type == ColumnType.EstimatedReachingTime)
+        {
+            TimeSpan? estimate = Stats.GetEstimatedReachingTime(state, splitIndex, timingMethod);
+            label.Text = estimate == null ? "" : TimeFormatter.Format(estimate);
+            return;
+        }
+
         if (data.Type is ColumnType.Completed or ColumnType.Reached)
         {
             label.Text = (data.Type == ColumnType.Completed ? Stats.GetCompleted(state, splitIndex) : Stats.GetReached(state, splitIndex)).ToString();

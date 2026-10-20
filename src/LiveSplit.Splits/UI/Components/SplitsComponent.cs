@@ -491,6 +491,10 @@ public class SplitsComponent : IComponent
                 {
                     labelWidth = timeWidth;
                 }
+                else if (column.Type is ColumnType.EstimatedReachingTime)
+                {
+                    labelWidth = Math.Max(deltaWidth, timeWidth);
+                }
                 else if (column.IsStatistic)
                 {
                     labelWidth = deltaWidth;
