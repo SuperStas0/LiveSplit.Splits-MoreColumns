@@ -22,16 +22,6 @@ public class ColumnData
         ColorByRate = colorByRate;
     }
 
-    public float GetLabelWidth(float timeWidth, float deltaWidth)
-    {
-        return Type switch
-        {
-            ColumnType.DeltaorSplitTime or ColumnType.SegmentDeltaorSegmentTime => Math.Max(timeWidth, deltaWidth),
-            ColumnType.Delta or ColumnType.SegmentDelta or ColumnType.Completed or ColumnType.Reached or ColumnType.Passrate or ColumnType.Reachrate => deltaWidth,
-            _ => timeWidth,
-        };
-    }
-
     public static ColumnData FromXml(XmlNode node)
     {
         var element = (XmlElement)node;
