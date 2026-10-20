@@ -12,6 +12,7 @@ Download `LiveSplit.Splits.dll` file from releases and move it to `C:/Program Fi
 - **Reached** - shows how many times the split has been reached
 - **Passrate** - shows completed / reached
 - **Reachrate** - shows the chance to reach the split: the passrates of all splits before it multiplied together
+- **Estimated Reaching Time** - Estimated average playtime needed to reach certain split. Calculates based off passrates and mean split times
 
 The running attempt only counts for splits it has already passed, so arriving at a split does not lower its passrate. It counts for the split it is on only once you reset there.
 
@@ -34,6 +35,6 @@ Building has same requirements as for [LiveSplit](https://github.com/LiveSplit/L
 - [.NET Framework 4.8.1 Developer Pack](https://dotnet.microsoft.com/en-us/download/dotnet-framework/thank-you/net481-developer-pack-offline-installer) (Which should be preinstalled at most windows installations)
 
 1. Clone repository
-2. Replace files in `/lib/` as needed
+2. Replace files in `/lib/` as needed (from LS installation directory)
 3. Run `dotnet build`
 4. Get `LiveSplit.Splits.dll` from `/artifacts/bin/LiveSplit.Splits/debug/`
